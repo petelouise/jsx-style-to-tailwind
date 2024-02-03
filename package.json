@@ -2,7 +2,8 @@
   "name": "jsx-style-to-tailwind",
   "version": "1.0.0",
   "description": "Convert JSX styles to Tailwind classes.",
-  "main": "index.js",
+  "main": "jsxStylesToTailwind.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "pretty": "prettier --write ."
@@ -28,10 +29,11 @@
     "@babel/parser": "^7.23.9",
     "@babel/traverse": "^7.23.9",
     "@babel/types": "^7.23.9",
+    "css-to-tailwind": "file:../css-to-tailwind",
     "css2tailwind": "^1.0.10"
   },
   "bin": {
-    "jsx-style-to-tailwind": "./index.js"
+    "jsx-style-to-tailwind": "./cli.js"
   },
   "devDependencies": {
     "prettier": "^3.2.4"
