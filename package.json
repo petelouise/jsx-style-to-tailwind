@@ -1,0 +1,38 @@
+{
+  "name": "jsx-style-to-tailwind",
+  "version": "1.0.0",
+  "description": "Convert JSX styles to Tailwind classes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petebrooks/jsx-style-to-tailwind.git"
+  },
+  "keywords": [
+    "jsx",
+    "tailwind",
+    "css",
+    "react"
+  ],
+  "author": "petelouise",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/petebrooks/jsx-style-to-tailwind/issues"
+  },
+  "homepage": "https://github.com/petebrooks/jsx-style-to-tailwind#readme",
+  "dependencies": {
+    "@babel/generator": "^7.23.6",
+    "@babel/parser": "^7.23.9",
+    "@babel/traverse": "^7.23.9",
+    "@babel/types": "^7.23.9",
+    "css2tailwind": "^1.0.10"
+  },
+  "bin": {
+    "jsx-style-to-tailwind": "./index.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.4"
+  }
+}
