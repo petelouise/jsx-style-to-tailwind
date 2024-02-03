@@ -1,13 +1,25 @@
 #!/usr/bin/env node
 
-const fs = require("fs")
-const { parse } = require("@babel/parser")
-const traverse = require("@babel/traverse").default
-const t = require("@babel/types")
-const generate = require("@babel/generator").default
-const { CssToTailwind } = require("css2tailwind")
+import fs from "fs/promises"
+import { parse } from "@babel/parser"
+import traverse from "@babel/traverse"
+import * as t from "@babel/types"
+import generate from "@babel/generator"
+import { TailwindConverter } from "css-to-tailwindcss"
+import postcssNested from "postcss-nested"
 
-// Utility function to convert style object to CSS string
+// Initialize TailwindConverter with desired configuration
+const converter = new TailwindConverter({
+  remInPx: 16,
+  postCSSPlugins: [postcssNested],
+  tailwindConfig: {
+    content: [],
+    theme: {
+      extend: {},
+    },
+  },
+})
+
 const toCSSString = (styles) => {
   return Object.entries(styles).reduce((css, [key, value]) => {
     const cssKey = key.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())
@@ -15,19 +27,19 @@ const toCSSString = (styles) => {
   }, "")
 }
 
-// Converts CSS to Tailwind classes using css2tailwind
-const convertCSSToTailwind = (cssString) => {
-  const conversionResult = CssToTailwind(cssString)
-  return conversionResult.data.map(({ resultVal }) => resultVal).join(" ")
+const convertInlineStylesToTailwind = async (styles) => {
+  const cssString = toCSSString(styles)
+  const { convertedRoot } = await converter.convertCSS(
+    `.component { ${cssString} }`,
+  )
+  return convertedRoot.toString().replace(".component ", "").trim()
 }
 
-// Main function to convert inline styles to Tailwind classes in a React component
 const convertComponentStylesToTailwind = async (filePath) => {
-  const code = fs.readFileSync(filePath, "utf8")
-  const ast = parse(code, {
-    sourceType: "module",
-    plugins: ["jsx"],
-  })
+  const code = await fs.readFile(filePath, "utf8")
+  const ast = parse(code, { sourceType: "module", plugins: ["jsx"] })
+
+  const conversionPromises = []
 
   traverse(ast, {
     JSXAttribute(path) {
@@ -44,38 +56,44 @@ const convertComponentStylesToTailwind = async (filePath) => {
           {},
         )
 
-        const cssString = toCSSString(styles)
-        const tailwindClasses = convertCSSToTailwind(
-          `.component {${cssString}}`,
+        const promise = convertInlineStylesToTailwind(styles).then(
+          (tailwindClasses) => {
+            path.replaceWith(
+              t.jsxAttribute(
+                t.jsxIdentifier("className"),
+                t.stringLiteral(tailwindClasses),
+              ),
+            )
+          },
         )
 
-        path.replaceWith(
-          t.jsxAttribute(
-            t.jsxIdentifier("className"),
-            t.stringLiteral(tailwindClasses),
-          ),
-        )
+        conversionPromises.push(promise)
       }
     },
   })
 
-  const { code: transformedCode } = generate(ast)
+  // Wait for all conversions to complete
+  await Promise.all(conversionPromises)
 
-  return transformedCode
+  const output = generate(ast, {}, code)
+  return output.code
 }
 
-function handleCliInput() {
+// CLI handling
+if (require.main === module) {
   const filePath = process.argv[2]
   if (!filePath) {
     console.error("Error: Please provide a file path as an argument.")
     process.exit(1)
   }
-  output = convertComponentStylesToTailwind(filePath)
-  console.log(output)
+
+  convertComponentStylesToTailwind(filePath)
+    .then((transformedCode) => {
+      console.log(transformedCode)
+      // Optionally, write the transformed code to a new file
+      // fs.writeFile('outputFilePath.js', transformedCode);
+    })
+    .catch(console.error)
 }
 
-if (require.main === module) {
-  handleCliInput()
-}
-
-module.exports = { convertComponentStylesToTailwind }
+export { convertComponentStylesToTailwind }
